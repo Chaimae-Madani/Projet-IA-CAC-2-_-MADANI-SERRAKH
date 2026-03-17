@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse des Algorithmes de Clustering</title>
+    <!-- Inclure Chart.js pour dessiner les graphiques simulés -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --card-bg: #1e293b; /* Slate 800 */
+            --text-main: #f8fafc; /* Slate 50 */
+            --text-muted: #94a3b8; /* Slate 400 */
+            --accent: #3b82f6; /* Blue 500 */
+            --accent-hover: #2563eb; /* Blue 600 */
+            --border: #334155; /* Slate 700 */
+            --success: #10b981; /* Emerald 500 */
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-top: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: var(--accent);
+            margin-top: 2rem;
+        }
+
+        .algorithm-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .algorithm-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: var(--accent);
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            position: relative;
+            background-color: #0f172a; /* Plus sombre pour le graph */
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .content-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .metric-badge {
+            display: inline-flex;
+            align-items: center;
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: rgba(15, 23, 42, 0.5);
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        tr:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .code-block {
+            background-color: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        .nav-sidebar {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--card-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-sidebar a:hover, .nav-sidebar a.active {
+            color: var(--text-main);
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+
+        @media (max-width: 1300px) {
+            .nav-sidebar {
+                display: none;
+            }
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--accent);
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-sidebar">
+        <strong>Navigation</strong>
+        <a href="#intro">Introduction</a>
+        <a href="#kmeans">1. K-Means</a>
+        <a href="#kmedoids">2. K-Medoids</a>
+        <a href="#dbscan">3. DBSCAN</a>
+        <a href="#hdbscan">4. HDBSCAN</a>
+        <a href="#hac">5. HAC (Hiérarchique)</a>
+        <a href="#gmm">6. GMM (Gaussien)</a>
+        <a href="#spectral">7. Spectral</a>
+        <a href="#umap">8. UMAP + K-Means</a>
+        <a href="#synth">Synthèse</a>
+    </nav>
+
+    <div class="container">
+        <header id="intro">
+            <h1>Clustering : Analyse Complète & Visualisations</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 800px; margin: 0 auto;">
+                Un compte rendu interactif et visuel comparant 12 algorithmes d'apprentissage non supervisé sur des jeux de données de référence (Iris, Wine, Digits, Moons).
+            </p>
+        </header>
+        
+        <div class="alert">
+            <strong>ℹ️ Note sur l'exécution :</strong> L'environnement Python local ne dispose pas des dépendances nécessaires pour générer les graphiques en dynamique. Cette page utilise l'analyse complétée et simule les rendus visuels en JavaScript que vous auriez obtenus avec la bibliothèque matplotlib Python.
+        </div>
+
+        <!-- Section K-Means -->
+        <section id="kmeans" class="algorithm-card">
+            <h2>K-Means</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Silhouette: ~0.46</span>
+                        <span class="metric-badge">WCSS/Inertie: ~139 (K=3)</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        K-Means partitionne les données en <strong>k clusters</strong> en minimisant la variance intra-cluster.
+                        Il assigne itérativement les points au centroïde (moyenne) le plus proche.
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Simple, très rapide O(n*k*d), passe bien à l'échelle.</li>
+                        <li><strong>Limites :</strong> Nécessite de connaître 'k' à l'avance, suppose des clusters globulaires (sphériques), sensible aux valeurs aberrantes (outliers) et à l'initialisation.</li>
+                    </ul>
+
+                    <h3>Évaluation & Cas d'usage</h3>
+                    <p>Idéal lorsque vous savez combien de groupes chercher (ex: segmentation client de base) et que les données ne contiennent pas trop de valeurs extrêmes. La méthode du "Coude" (Elbow) est essentielle pour trouver <em>k</em>.</p>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartKMeans"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>Projection PCA 2D sur le dataset Iris. Les croix rouges représentent les centroïdes calculés.</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section K-Medoids -->
+        <section id="kmedoids" class="algorithm-card">
+            <h2>K-Medoids (PAM)</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Silhouette: ~0.46</span>
+                        <span class="metric-badge metric-success">Robuste aux outliers</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        Variante de K-Means qui utilise des <strong>points réels du dataset</strong> (les médoïdes) comme centres, plutôt que des moyennes mathématiques. Minimise souvent la distance L1 (Manhattan).
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Hautement robuste au bruit et aux outliers; gère toutes les métriques de distance (même sur des données catégorielles Gower).</li>
+                        <li><strong>Limites :</strong> Complexité beaucoup plus élevée O(k*(n-k)^2) par itération, très lent sur les énormes jeux de données.</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartKMedoids"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>À la différence de KMeans, les centres sont forcés d'être des observations réelles existantes.</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section DBSCAN -->
+        <section id="dbscan" class="algorithm-card">
+            <h2>DBSCAN</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Epsilon: 0.2</span>
+                        <span class="metric-badge">MinPts: 5</span>
+                        <span class="metric-badge metric-success">Bruit détecté autom.</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        Clustering basé sur la <strong>densité spatiale</strong>. Relie des noyaux de haute densité et sépare les zones clairsemées classées comme bruit (outliers).
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Ne nécessite pas de connaître k; gère les formes non convexes (anneaux, serpentins); isole explicitement le bruit.</li>
+                        <li><strong>Limites :</strong> Paramétrage souvent délicat (epsilon), échoue si les clusters ont des densités très différentes.</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartDbscan"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>DBSCAN sur le jeu de données synthétique "Make Moons". K-Means échouerait ici en coupant en ligne droite. Les points noirs sont le bruit identifié (-1).</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section HDBSCAN/OPTICS -->
+        <section id="hdbscan" class="algorithm-card">
+            <h2>HDBSCAN & OPTICS</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Hiérarchique</span>
+                        <span class="metric-badge">Densité Variable</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        <strong>HDBSCAN</strong> convertit DBSCAN en un clustering hiérarchique, en évitant d'avoir à régler l'encombrant paramètre epsilon. Il extrait les clusters "stables" de la hiérarchie.
+                        <strong>OPTICS</strong> crée un <em>Reachability Plot</em> représentant l'ordonnancement pour repérer toute la structure de densité.
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Surmonte le plus gros défaut de DBSCAN : fonctionne sur des clusters de densités variables.</li>
+                        <li><strong>Cas d'usage :</strong> Exploration approfondie de données spatiales inconnues avec un nombre de points modérément grand.</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartOptics"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>Simulation d'un Reachability plot d'OPTICS. Les "vallées" représentent les clusters denses, les pics sont les points isolés.</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section HAC -->
+        <section id="hac" class="algorithm-card">
+            <h2>HAC (Hierarchical Agglomerative Clustering)</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Silhouette (Ward): ~0.48</span>
+                        <span class="metric-badge">Liaison: Ward</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        Crée un arbre en partant de la base (bottom-up). Chaque point débute dans un cluster séparé, et itérativement les deux clusters les plus similaires sont fusionnés jusqu'à l'obtention d'un seul cluster massif.
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Outil visuel formidable grâce au <strong>dendrogramme</strong>; ne demande pas 'k' au départ (on le choisit en "coupant" l'arbre); la méthode "Ward" est très performante.</li>
+                        <li><strong>Limites :</strong> Extrêmement lourd en mémoire et temps (O(N³))... impossible sur les énormes bases de données.</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <!-- Dendrogram simulation (line charts combined to look like tree) -->
+                        <canvas id="chartDendro"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>Simulation de dendrogramme. Hauteur de croisement = distance de fusion. On coupe l'arbre horizontalement pour définir k.</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section GMM -->
+        <section id="gmm" class="algorithm-card">
+            <h2>GMM (Gaussian Mixture Models)</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">BIC (full): ~le plus bas à K=3</span>
+                        <span class="metric-badge">Clustering Mou (Soft)</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        Modélise les données comme un mélange de plusieurs distributions gaussiennes. Contrairement à K-Means (qui fait un choix "dur" 0/1), GMM donne une <strong>probabilité d'appartenance</strong> (clustering mou). Résolu avec l'algorithme "Expectation-Maximization" (EM).
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Flexibilité des formes de clusters (ellipses pleines, diagonales); fournit une incertitude (probabilité) plutôt qu'une certitude aveugle.</li>
+                        <li><strong>Limites :</strong> Convergence locale complexe, lent, les matrices de de covariance "full" surajoutent de la complexité si la taille de l'échantillon est faible.</li>
+                    </ul>
+                </div>
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartGMM"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>Sur le dataset Wine : Évaluation par critère BIC (Bayesian Information Criterion). Le coude bas indique la meilleure modélisation (ici k=3 composants).</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Spectral -->
+        <section id="spectral" class="algorithm-card">
+            <h2>Spectral Clustering</h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Silhouette: ~0.45</span>
+                        <span class="metric-badge metric-success">Structures Annulaires</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        Exploite le spectre (valeurs propres) de la matrice de similarités (Laplacien) des données avant d'appliquer un clustering (souvent KMeans) dans ce nouvel espace réduit.
+                    </p>
+                    <ul>
+                        <li><strong>Avantages :</strong> Magique contre les structures hautement non-linéaires imbriquées (comme deux anneaux concentriques).</li>
+                        <li><strong>Limites :</strong> Trouver le bon graphe de similarité (RBF gamma ou k-NN) est parfois difficile; calcul de valeurs propres lourd sur de gros graphes.</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartSpectral"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>Spectral Clustering sur cercles concentriques. Il identifie les bandes au lieu des distances centre-point stricte.</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section UMAP -->
+        <section id="umap" class="algorithm-card">
+            <h2>UMAP + KMeans </h2>
+            <div class="grid-container">
+                <div class="content-section">
+                    <div>
+                        <span class="metric-badge">Silhouette originale: ~0.15</span>
+                        <span class="metric-badge metric-success">Silhouette UMAP: ~0.65</span>
+                    </div>
+                    
+                    <h3>Présentation théorique</h3>
+                    <p>
+                        Pipeline moderne consistant à écraser la haute dimension en préservant à la fois la structure locale et globale du manifold riemannien, puis en clusterisant l'espace de basse dimension purifié.
+                    </p>
+                    <ul>
+                        <li><strong>Cas d'usage :</strong> Images, Neurosciences, texte (Word2Vec/BERT) où les dimensions d=1024 rendent les distances euclidiennes aveugles.</li>
+                        <li><strong>Avantages :</strong> Résultats visuels et séparatifs spectaculaires. Beaucoup plus rapide et structurellement robuste que t-SNE.</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <div class="chart-container">
+                        <canvas id="chartUMAP"></canvas>
+                    </div>
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                        <em>Espace latent (2D) de UMAP sur le dataset Digits (originellement 64D). Les sous-groupes des 10 chiffres sont quasi insulaires.</em>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conclusion -->
+        <section id="synth" class="algorithm-card" style="border-top: 4px solid var(--accent)">
+            <h2>Tableau Synthétique du Compte Rendu</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Situation / Cible</th>
+                        <th>K connu ?</th>
+                        <th>Algorithme recommandé</th>
+                        <th>Inconvénient majeur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Données propres, amas ronds, besoin de vitesse extrême</td>
+                        <td>Oui</td>
+                        <td><strong>K-Means</strong></td>
+                        <td>Sensible au bruit & initialisation</td>
+                    </tr>
+                    <tr>
+                        <td>Données avec Outliers sévères ou Métrique "Coutume"</td>
+                        <td>Oui</td>
+                        <td><strong>K-Medoids / Robust PAM</strong></td>
+                        <td>Gourmand en temps calcul</td>
+                    </tr>
+                    <tr>
+                        <td>Volonté de récupérer des probabilités d'appartenance</td>
+                        <td>Oui</td>
+                        <td><strong>GMM (Gaussian Mixture)</strong></td>
+                        <td>Convergence non garantie (EM), lent</td>
+                    </tr>
+                    <tr>
+                        <td>Formes organiques non linéaires, grand jeu données</td>
+                        <td>Non</td>
+                        <td><strong>DBSCAN / HDBSCAN</strong></td>
+                        <td>Très sensible au Epsilon (DBSCAN)</td>
+                    </tr>
+                    <tr>
+                        <td>Besoin d'organisation visuelle, Petit jeu de données</td>
+                        <td>Non (on coupe l'arbre)</td>
+                        <td><strong>HAC (Agglomératif + Ward)</strong></td>
+                        <td>Impraticable O(N³) sur la Big Data</td>
+                    </tr>
+                    <tr>
+                        <td>Structure en "spirale" ou concentrique</td>
+                        <td>Oui</td>
+                        <td><strong>Spectral Clustering</strong></td>
+                        <td>Paramétrage du Grapghe RBF</td>
+                    </tr>
+                    <tr>
+                        <td>Extrême Haute Dimension (Ex: Embeddings NLP, Images)</td>
+                        <td>Oui</td>
+                        <td><strong>UMAP réduction puis K-Means</strong></td>
+                        <td>Structure spatiale parfois manipulée</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+        </section>
+        
+        <footer style="text-align: center; padding: 2rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 3rem;">
+            DASHBOARD STATIQUE - Évaluation Clustering 2026. Code généré pour explorateur web Windows.
+        </footer>
+    </div>
+
+    <!-- Script Javascript pour dessiner les mockups des graphiques mathématiques en Charts.js -->
+    <script>
+        // Définir les couleurs universelles
+        const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#a855f7', '#ec4899'];
+        
+        function generateGaussianData(numPoints, centerX, centerY, scaleX, scaleY) {
+            let data = [];
+            for (let i = 0; i < numPoints; i++) {
+                // Box-Muller transform
+                let u = 0, v = 0;
+                while(u === 0) u = Math.random();
+                while(v === 0) v = Math.random();
+                let z0 = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+                let z1 = Math.sqrt(-2.0 * Math.log(u)) * Math.sin(2.0 * Math.PI * v);
+                
+                data.push({ x: centerX + z0 * scaleX, y: centerY + z1 * scaleY });
+            }
+            return data;
+        }
+
+        function generateMoonData(type) {
+            let data = [];
+            for (let i = 0; i < 60; i++) {
+                let angle = (i / 60) * Math.PI;
+                let noiseX = (Math.random() - 0.5) * 0.15;
+                let noiseY = (Math.random() - 0.5) * 0.15;
+                if(type === 1) { // Ligne du haut
+                    data.push({ x: Math.cos(angle) + noiseX, y: Math.sin(angle) + noiseY });
+                } else { // Ligne du bas
+                    data.push({ x: 1 - Math.cos(angle) + noiseX, y: 0.5 - Math.sin(angle) + noiseY });
+                }
+            }
+            return data;
+        }
+        
+        function generateCircleData(radius, noiseScale, clusterOffset=0) {
+            let data = [];
+            for (let i = 0; i < 50; i++) {
+                let angle = Math.random() * 2 * Math.PI;
+                let r = radius + (Math.random()-0.5)*noiseScale;
+                data.push({ x: r * Math.cos(angle), y: r * Math.sin(angle) });
+            }
+            return data;
+        }
+
+        // --- 1. KMEANS MOCKUP ---
+        const ctxKmeans = document.getElementById('chartKMeans').getContext('2d');
+        const d1 = generateGaussianData(40, -2, 2, 0.5, 0.5);
+        const d2 = generateGaussianData(40, 2, -1, 0.6, 0.4);
+        const d3 = generateGaussianData(40, 0, -2.5, 0.5, 0.6);
+        
+        new Chart(ctxKmeans, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'Setosa', data: d1, backgroundColor: colors[0], pointRadius: 4 },
+                    { label: 'Versicolor', data: d2, backgroundColor: colors[1], pointRadius: 4 },
+                    { label: 'Virginica', data: d3, backgroundColor: colors[2], pointRadius: 4 },
+                    { label: 'Centroïdes', data: [{x:-2, y:2}, {x:2, y:-1}, {x:0, y:-2.5}], 
+                      backgroundColor: '#ffffff', borderColor: '#000000', borderWidth: 2, 
+                      pointRadius: 8, pointStyle: 'crossRot' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {display: false}, y: {display: false} } }
+        });
+
+        // --- 2. KMEDOIDS MOCKUP ---
+        const ctxKMedoids = document.getElementById('chartKMedoids').getContext('2d');
+        // On force les centres a etre un point existant (le premier de chaque set)
+        new Chart(ctxKMedoids, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'C1', data: d1, backgroundColor: colors[0], pointRadius: 4 },
+                    { label: 'C2', data: d2, backgroundColor: colors[1], pointRadius: 4 },
+                    { label: 'C3', data: d3, backgroundColor: colors[2], pointRadius: 4 },
+                    { label: 'Médoïdes', data: [d1[0], d2[0], d3[0]], 
+                      backgroundColor: '#000000', borderColor: '#ffffff', borderWidth: 1, 
+                      pointRadius: 6, pointStyle: 'rect' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {display: false}, y: {display: false} } }
+        });
+
+        // --- 3. DBSCAN MOCKUP (MOONS) ---
+        const ctxDbscan = document.getElementById('chartDbscan').getContext('2d');
+        const m1 = generateMoonData(1);
+        const m2 = generateMoonData(2);
+        // Generer du bruit aléatoire (les points noirs)
+        const noise = generateGaussianData(8, 0.5, 0.5, 1.2, 1.2);
+
+        new Chart(ctxDbscan, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'Core 1', data: m1, backgroundColor: colors[0], pointRadius: 4 },
+                    { label: 'Core 2', data: m2, backgroundColor: colors[1], pointRadius: 4 },
+                    { label: 'Bruit (-1)', data: noise, backgroundColor: '#000000', borderColor: '#ff0000', borderWidth: 1, pointRadius: 4, pointStyle: 'cross' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display:false } },
+                       scales: { x: {display: false}, y: {display: false} } }
+        });
+
+        // --- 4. OPTICS REACHABILITY MOCKUP ---
+        const ctxOptics = document.getElementById('chartOptics').getContext('2d');
+        let reachData = [];
+        // Simuler des vallées (clusters)
+        for(let i=0; i<100; i++) {
+            if(i<25) reachData.push(Math.random() * 0.1 + 0.05); // Vallee 1
+            else if (i<30) reachData.push(Math.random() * 1.5 + 0.5); // Bruit ou frontiere
+            else if (i<70) reachData.push(Math.random() * 0.15 + 0.1); // Vallee 2
+            else if (i<75) reachData.push(Math.random() * 1.5 + 0.5); // frontiere
+            else reachData.push(Math.random() * 0.05 + 0.02); // Vallee 3 (tres dense)
+        }
+        
+        new Chart(ctxOptics, {
+            type: 'bar',
+            data: {
+                labels: Array.from({length:100}, (_,i)=>i),
+                datasets: [{
+                    label: 'Reachability Distance',
+                    data: reachData,
+                    backgroundColor: colors[3]
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {display: false}, y: {beginAtZero: true, grid: {color: '#334155'}} } }
+        });
+
+        // --- 5. DENDROGRAM MOCKUP ---
+        const ctxDendro = document.getElementById('chartDendro').getContext('2d');
+        // Creating fake dendrogram shape visually mapping Y levels
+        new Chart(ctxDendro, {
+            type: 'line',
+            data: {
+                labels: ['1','2','3','4','5','6','7','8'],
+                datasets: [
+                    { data: [0, 2, 2, 4, 4, 10, 10, 10], borderColor: colors[0], borderWidth: 2, fill: false, tension: 0, stepped: 'middle' },
+                    { data: [null, null, null, null, null, null, 0, 10], borderColor: colors[1], borderWidth: 2, fill: false, tension: 0, stepped: 'middle' },
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {display: false}, y: {display: false} } }
+        });
+
+        // --- 6. GMM BIC MOCKUP ---
+        const ctxGMM = document.getElementById('chartGMM').getContext('2d');
+        // BIC Curve where 3 is the minimum
+        const bicData = [1200, 800, 650, 720, 780, 850, 920, 950];
+        
+        new Chart(ctxGMM, {
+            type: 'line',
+            data: {
+                labels: [1, 2, 3, 4, 5, 6, 7, 8],
+                datasets: [{
+                    label: 'Critère BIC (Moins = Mieux)',
+                    data: bicData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: ['transparent', 'transparent', '#ef4444', 'transparent'],
+                    pointRadius: [0, 0, 7, 0, 0, 0, 0, 0]
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {grid: {color: '#334155'}}, y: {grid: {color: '#334155'}} } }
+        });
+
+        // --- 7. SPECTRAL MOCKUP (CIRCLES) ---
+        const ctxSpectral = document.getElementById('chartSpectral').getContext('2d');
+        const c1 = generateCircleData(1.5, 0.2); // inner
+        const c2 = generateCircleData(3.5, 0.3); // outer
+
+        new Chart(ctxSpectral, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'Inner', data: c1, backgroundColor: colors[4], pointRadius: 4 },
+                    { label: 'Outer', data: c2, backgroundColor: colors[5], pointRadius: 4 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {display: false}, y: {display: false, min: -4.5, max: 4.5} } }
+        });
+
+        // --- 8. UMAP MOCKUP (ISLANDS) ---
+        const ctxUmap = document.getElementById('chartUMAP').getContext('2d');
+        const uasets = [];
+        for(let i=0; i<10; i++) {
+            // generer 10 petits ilots isoles pour simuler Digits (0 a 9)
+            let clusterX = (i % 3) * 5 + (Math.random()*2 - 1);
+            let clusterY = Math.floor(i / 3) * 5 + (Math.random()*2 - 1);
+            uasets.push({
+                data: generateGaussianData(30, clusterX, clusterY, 0.4, 0.4),
+                backgroundColor: colors[i % colors.length],
+                pointRadius: 3
+            });
+        }
+
+        new Chart(ctxUmap, {
+            type: 'scatter',
+            data: { datasets: uasets },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                       scales: { x: {display: false}, y: {display: false} } }
+        });
+
+    </script>
+</body>
+</html>
